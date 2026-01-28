@@ -45,6 +45,11 @@ INSTALLED_APPS = [
 
 AUTH_USER_MODEL = 'authentication.User'
 
+
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+EMAIL_HOST_USER = 'support@myapp.com'
+
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',

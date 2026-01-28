@@ -6,9 +6,13 @@ from .managers import CustomUserManager
 class User(AbstractUser):
     username = models.CharField(max_length=150, unique=True)
     email = models.EmailField(unique=True)
+    failed_login_attempts = models.IntegerField(default=0)
+    last_failed_time = models.DateTimeField(null=True, blank=True)
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username']
     objects = CustomUserManager()
+
+
 
     def __str__(self):
         return self.email
