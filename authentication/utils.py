@@ -22,7 +22,7 @@ def send_otp_via_email(user):
 
 
 def send_password_reset_otp(user):
-    otp_code = generate_otp
+    otp_code = generate_otp()
 
     OneTimePassword.objects.update_or_create(
         user=user,

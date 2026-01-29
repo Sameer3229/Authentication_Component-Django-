@@ -156,3 +156,44 @@ class PasswordResetRequestView(GenericAPIView):
                 return Response({"message": "Password reset code sent to your email."}, status=status.HTTP_200_OK)
         
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class SetNewPasswordView(GenericAPIView):
+    serializer_class = SetNewPasswordSerializer
+
+    def post(self, request):
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            email = serializer.validated_data['email']
+            otp = serializer.validated_data['otp']
+            new_password = serializer.validated_data['password']
+
+            try:
+                user = User.objects.get(email=email)
+                otp_record = OneTimePassword.objects.get(user=user)
+            except (User.DoesNotExist, OneTimePassword.DoesNotExist):
+                 return Response({"message": "Invalid request."}, status=status.HTTP_404_NOT_FOUND)
+            
+            if otp_record.is_blocked:
+                return Response({"message": "Account blocked due to multiple attempts."}, status=status.HTTP_403_FORBIDDEN)
+            
+            if otp_record.code == otp:
+                
+                user.set_password(new_password) 
+                user.save()
+                otp_record.delete()
+                send_password_success_email(user)
+                
+                return Response({"message": "Password reset successfully."}, status=status.HTTP_200_OK)
+            else:
+                otp_record.attempts += 1
+                otp_record.save()
+                remaining = 3 - otp_record.attempts
+                
+                if remaining <= 0:
+                    otp_record.is_blocked = True
+                    otp_record.save()
+                    return Response({"message": "Account blocked."}, status=status.HTTP_403_FORBIDDEN)
+                
+                return Response({"message": f"Invalid code. {remaining} attempts left."}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
