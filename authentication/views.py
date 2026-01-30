@@ -8,6 +8,8 @@ from .utils import send_otp_via_email, send_password_reset_otp, send_password_su
 from django.utils import timezone
 from datetime import timedelta
 from django.contrib.auth import authenticate
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.permissions import IsAuthenticated
 
 
 User = get_user_model()
@@ -119,8 +121,12 @@ class LoginView(GenericAPIView):
             user.failed_login_attempts = 0
             user.last_failed_time = None
             user.save()
+
+            tokens = RefreshToken.for_user(user)
             return Response({
                 "message": "Login Successful",
+                "access":str(tokens.access_token),
+                "refresh":str(tokens),
                 "user_id": user.id,
                 "email": user.email
             }, status=status.HTTP_200_OK)
@@ -197,3 +203,14 @@ class SetNewPasswordView(GenericAPIView):
                 return Response({"message": f"Invalid code. {remaining} attempts left."}, status=status.HTTP_400_BAD_REQUEST)
 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class TestProtectedView(GenericAPIView):
+    permission_classes = [IsAuthenticated] # Ye line darwaza band karti hai
+
+    def get(self, request):
+        return Response({
+            "message": "Mubarak ho! Aap authenticated hain.",
+            "your_email": request.user.email,
+            "your_id": request.user.id
+        }, status=status.HTTP_200_OK)
